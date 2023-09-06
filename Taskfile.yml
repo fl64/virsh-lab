@@ -66,6 +66,12 @@ tasks:
         --console pty,target_type=virtio \
         --serial pty \
         --virt-type kvm
+  drr:
+    cmds:
+    - task: destroy
+    - task: restore
+    - task: run
+
   destroy:
     cmds:
     - virsh destroy --domain {{ .VM_NAME }} || true
