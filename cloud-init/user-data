@@ -18,6 +18,7 @@ packages:
   - qemu-guest-agent
 
 users:
+  - default
   - name: user
     # mkpasswd --method=SHA-512 --rounds=4096
     # user
