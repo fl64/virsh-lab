@@ -1,0 +1,47 @@
+#cloud-config
+
+password: cloud
+chpasswd: { expire: False }
+ssh_pwauth: true
+disable_root: false
+ssh_quiet_keygen: true
+timezone: UTC
+package_update: true
+package_upgrade: true
+
+# runcmd:
+#    - apk update && apk upgrade
+
+packages:
+  - htop
+  - tmux
+  - qemu-guest-agent
+
+users:
+  - name: user
+    # mkpasswd --method=SHA-512 --rounds=4096
+    # user
+    passwd: $6$rounds=4096$p2OtuWDwl0TqxXHR$ynHAc12wc3MEAKKFNRIB1FJcmnMfyqaSnh3k1I2NmyWemvLSbhZ7Hzo6YMP6kWaKYGh8yo0nZLRlZ8FCQ3Vlh1
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    chpasswd: { expire: False }
+    lock_passwd: false
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDEK0BPb5wD64qxde25yj3+GgT/vU3RsOPpm8LU4x5wu5W8rAscDvBtbNFB88EzBT+6U5+HfzzBgCmi2MkhNoGv2SPpQYjh9q31LOrqn7d02PV2ToxKuDSFXT1oknpc1vW4e8a6Pft+ccqICc3AlzTVoPToAPTiYzVAd2T9k/RJ5w== user-data
+
+
+write_files:
+  - path: /etc/ssh/sshd_config
+    permissions: 0600
+    owner: root:root
+    content: |
+      # Use most defaults for sshd configuration.
+      Subsystem sftp internal-sftp
+
+      PermitRootLogin yes
+      PasswordAuthentication yes
+      PermitEmptyPasswords yes
+      PubkeyAuthentication yes
+
+cloud_final_modules:
+- [final_message, once, "🔥 The system is finally up, after $UPTIME seconds 🔥"]

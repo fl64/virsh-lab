@@ -1,0 +1,23 @@
+#cloud-config
+ssh_pwauth: false
+disable_root: true
+users:
+  - name: vendor
+    # mkpasswd --method=SHA-512 --rounds=4096
+    # vendor
+    passwd: $6$rounds=4096$o41zs32NvqU6Spiu$BVCsCHBF4ECAVs7Ey3xWCH4pSd.YNQrmW30h1qtFD9AosEtygFn8AQc/GFS1RwHCVAk7.5SiCKKmRoCLzHZrk.
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    chpasswd: { expire: False }
+    lock_passwd: false
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDH6Er1hITJ8KjpQmpcDnxX/N+t8V4HV2Ke17C6gwIasDqv4DfNu009YKD9VQm3ESNWwQQfqzXDrBRxWD/KVwn0QlQZFz4kFKZDpdCn++5HX4YroxxT2k+JwcXdZuczS1lnfXh9PYQ2+hkz5arVDFIlkwv/GHHc7IF70GEC9O6rSQ== vendor-data
+
+
+system_info:
+    default_user:
+      name: vendor
+      home: /vendor
+
+cloud_final_modules:
+- [final_message, once, "💎💎💎 The system is finally up, after $UPTIME seconds 💎💎💎"]

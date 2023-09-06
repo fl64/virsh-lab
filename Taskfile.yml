@@ -1,0 +1,82 @@
+# https://taskfile.dev
+
+version: "3"
+
+vars:
+  TMP_DIR: ./tmp
+  TEST_DIR: ./test
+  VM_NAME: vlab
+  IMAGE_URL: "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
+  IMAGE_PATH: "{{ .TMP_DIR }}/ubuntu.img"
+  IMAGE_BACKUP_PATH: "{{ .TMP_DIR }}/ubuntu-backup.img"
+  CLOUD_INIT_SRC_DIR: ./cloud-init
+  CLOUD_INIT_PATH: "{{ .TMP_DIR }}/cidata.iso"
+
+tasks:
+  tmp:
+    cmds:
+      - mkdir -p "{{ .TMP_DIR }}"
+
+  ssh-gen:
+    cmds:
+      - yes | ssh-keygen -t rsa -b 1024 -f {{ .TEST_DIR }}/ssh/meta-data -N "" -C "meta-data" -v
+      - yes | ssh-keygen -t rsa -b 1024 -f {{ .TEST_DIR }}/ssh/user-data -N "" -C "user-data" -v
+      - yes | ssh-keygen -t rsa -b 1024 -f {{ .TEST_DIR }}/ssh/vendor-data -N "" -C "vendor-data" -v
+
+  get-image:
+    deps:
+      - tmp
+    cmds:
+      - curl {{ .IMAGE_URL }} -o {{ .IMAGE_PATH }}
+  backup:
+    deps:
+      - tmp
+    cmds:
+      - cp {{ .IMAGE_PATH }} {{ .IMAGE_BACKUP_PATH }}
+  restore:
+    cmds:
+      - cp {{ .IMAGE_BACKUP_PATH }} {{ .IMAGE_PATH }}
+
+  cloudinit:
+    deps:
+      - tmp
+    cmds:
+      - rm -rf {{ .CLOUD_INIT_PATH }}
+      - |
+        genisoimage -output {{ .CLOUD_INIT_PATH }} -fU -V cidata -r -J \
+          {{ .CLOUD_INIT_SRC_DIR }}/user-data \
+          {{ .CLOUD_INIT_SRC_DIR }}/meta-data \
+          {{ .CLOUD_INIT_SRC_DIR }}/vendor-data
+
+  run:
+    deps:
+    - cloudinit
+    cmds:
+    - |
+        virt-install \
+        --name {{ .VM_NAME }} \
+        --os-variant ubuntujammy \
+        --ram 1024 \
+        --vcpus=1,maxvcpus=10 \
+        --disk path={{ .IMAGE_PATH }},format=qcow2,bus=virtio \
+        --disk path={{ .CLOUD_INIT_PATH }},device=cdrom,bus=sata \
+        --network network=default,model=virtio \
+        --import \
+        --graphics none \
+        --console pty,target_type=virtio \
+        --serial pty \
+        --virt-type kvm
+  destroy:
+    cmds:
+    - virsh destroy --domain {{ .VM_NAME }} || true
+    - virsh undefine --domain {{ .VM_NAME }} || true
+
+  con:
+    cmds:
+    - virsh console {{ .VM_NAME }}
+  vnc:
+    cmds:
+    - virsh vncdisplay {{ .VM_NAME }}
+  vm-ip:
+    cmds:
+    - virsh domifaddr {{ .VM_NAME }}
