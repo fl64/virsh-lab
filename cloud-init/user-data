@@ -47,5 +47,5 @@ cloud_final_modules:
   - [
       final_message,
       once,
-      "🔥 The system is finally up, after $UPTIME seconds 🔥",
+      "🔥🔥🔥 The system is finally up, after $UPTIME seconds 🔥🔥🔥",
     ]

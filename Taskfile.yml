@@ -18,17 +18,23 @@ tasks:
     cmds:
       - mkdir -p "{{ .TMP_DIR }}"
 
+
   ssh-gen:
     cmds:
-      - yes | ssh-keygen -t rsa -b 1024 -f {{ .TEST_DIR }}/ssh/meta-data -N "" -C "meta-data" -v
-      - yes | ssh-keygen -t rsa -b 1024 -f {{ .TEST_DIR }}/ssh/user-data -N "" -C "user-data" -v
-      - yes | ssh-keygen -t rsa -b 1024 -f {{ .TEST_DIR }}/ssh/vendor-data -N "" -C "vendor-data" -v
+      - for: [meta,user,vendor]
+        cmd: yes | ssh-keygen -t rsa -b 1024 -f {{ .TEST_DIR }}/ssh/{{ .ITEM }}-data -N "" -C "{{ .ITEM }}-data" -v
+    status:
+    - test -f "{{ .TEST_DIR }}/ssh/meta-data"
+    - test -f "{{ .TEST_DIR }}/ssh/user-data"
+    - test -f "{{ .TEST_DIR }}/ssh/vendor-data"
 
   get-image:
     deps:
       - tmp
     cmds:
       - curl {{ .IMAGE_URL }} -o {{ .IMAGE_PATH }}
+    status:
+    - test -f "{{ .IMAGE_PATH }}"
   backup:
     deps:
       - tmp
@@ -42,15 +48,20 @@ tasks:
     deps:
       - tmp
     cmds:
-      - rm -rf {{ .CLOUD_INIT_PATH }}
       - |
         genisoimage -output {{ .CLOUD_INIT_PATH }} -fU -V cidata -r -J \
           {{ .CLOUD_INIT_SRC_DIR }}/user-data \
           {{ .CLOUD_INIT_SRC_DIR }}/meta-data \
           {{ .CLOUD_INIT_SRC_DIR }}/vendor-data
+    sources:
+      - "{{ .CLOUD_INIT_SRC_DIR }}/*"
+    generates:
+      - "{{ .CLOUD_INIT_PATH }}"
+
 
   run:
     deps:
+    - get-image
     - cloudinit
     cmds:
     - |
