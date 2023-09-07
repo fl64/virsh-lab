@@ -30,7 +30,6 @@ users:
     ssh_authorized_keys:
       - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDEK0BPb5wD64qxde25yj3+GgT/vU3RsOPpm8LU4x5wu5W8rAscDvBtbNFB88EzBT+6U5+HfzzBgCmi2MkhNoGv2SPpQYjh9q31LOrqn7d02PV2ToxKuDSFXT1oknpc1vW4e8a6Pft+ccqICc3AlzTVoPToAPTiYzVAd2T9k/RJ5w== user-data
 
-
 write_files:
   - path: /etc/ssh/sshd_config
     permissions: 0600
@@ -45,4 +44,8 @@ write_files:
       PubkeyAuthentication yes
 
 cloud_final_modules:
-- [final_message, once, "🔥 The system is finally up, after $UPTIME seconds 🔥"]
+  - [
+      final_message,
+      once,
+      "🔥 The system is finally up, after $UPTIME seconds 🔥",
+    ]

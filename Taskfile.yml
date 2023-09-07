@@ -6,9 +6,10 @@ vars:
   TMP_DIR: ./tmp
   TEST_DIR: ./test
   VM_NAME: vlab
-  IMAGE_URL: "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
-  IMAGE_PATH: "{{ .TMP_DIR }}/ubuntu.img"
-  IMAGE_BACKUP_PATH: "{{ .TMP_DIR }}/ubuntu-backup.img"
+  #IMAGE_URL: "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
+  IMAGE_URL: "https://share.lv426.space/alpine-3-18.qcow2"
+  IMAGE_PATH: "{{ .TMP_DIR }}/cloud.img"
+  IMAGE_BACKUP_PATH: "{{ .TMP_DIR }}/cloud-backup.img"
   CLOUD_INIT_SRC_DIR: ./cloud-init
   CLOUD_INIT_PATH: "{{ .TMP_DIR }}/cidata.iso"
 
@@ -86,3 +87,8 @@ tasks:
   vm-ip:
     cmds:
     - virsh domifaddr {{ .VM_NAME }}
+
+  clean:
+    cmds:
+    - task: destroy
+    - rm -rf {{ .TMP_DIR }}
