@@ -18,23 +18,24 @@ tasks:
     cmds:
       - mkdir -p "{{ .TMP_DIR }}"
 
-
   ssh-gen:
     cmds:
-      - for: [meta,user,vendor]
+      - for: [meta, user, vendor]
         cmd: yes | ssh-keygen -t rsa -b 1024 -f {{ .TEST_DIR }}/ssh/{{ .ITEM }}-data -N "" -C "{{ .ITEM }}-data" -v
     status:
-    - test -f "{{ .TEST_DIR }}/ssh/meta-data"
-    - test -f "{{ .TEST_DIR }}/ssh/user-data"
-    - test -f "{{ .TEST_DIR }}/ssh/vendor-data"
+      - test -f "{{ .TEST_DIR }}/ssh/meta-data"
+      - test -f "{{ .TEST_DIR }}/ssh/user-data"
+      - test -f "{{ .TEST_DIR }}/ssh/vendor-data"
 
   get-image:
     deps:
       - tmp
     cmds:
       - curl {{ .IMAGE_URL }} -o {{ .IMAGE_PATH }}
+      - task: backup
     status:
-    - test -f "{{ .IMAGE_PATH }}"
+      - test -f "{{ .IMAGE_PATH }}"
+
   backup:
     deps:
       - tmp
@@ -48,6 +49,7 @@ tasks:
     deps:
       - tmp
     cmds:
+      - rm -rf {{ .CLOUD_INIT_PATH }}
       - |
         genisoimage -output {{ .CLOUD_INIT_PATH }} -fU -V cidata -r -J \
           {{ .CLOUD_INIT_SRC_DIR }}/user-data \
@@ -58,13 +60,12 @@ tasks:
     generates:
       - "{{ .CLOUD_INIT_PATH }}"
 
-
   run:
     deps:
-    - get-image
-    - cloudinit
+      - get-image
+      - cloudinit
     cmds:
-    - |
+      - |
         virt-install \
         --name {{ .VM_NAME }} \
         --os-variant ubuntujammy \
@@ -80,26 +81,26 @@ tasks:
         --virt-type kvm
   drr:
     cmds:
-    - task: destroy
-    - task: restore
-    - task: run
+      - task: destroy
+      - task: restore
+      - task: run
 
   destroy:
     cmds:
-    - virsh destroy --domain {{ .VM_NAME }} || true
-    - virsh undefine --domain {{ .VM_NAME }} || true
+      - virsh destroy --domain {{ .VM_NAME }} || true
+      - virsh undefine --domain {{ .VM_NAME }} || true
 
   con:
     cmds:
-    - virsh console {{ .VM_NAME }}
+      - virsh console {{ .VM_NAME }}
   vnc:
     cmds:
-    - virsh vncdisplay {{ .VM_NAME }}
+      - virsh vncdisplay {{ .VM_NAME }}
   vm-ip:
     cmds:
-    - virsh domifaddr {{ .VM_NAME }}
+      - virsh domifaddr {{ .VM_NAME }}
 
   clean:
     cmds:
-    - task: destroy
-    - rm -rf {{ .TMP_DIR }}
+      - task: destroy
+      - rm -rf {{ .TMP_DIR }}
