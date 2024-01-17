@@ -1,0 +1,65 @@
+---
+- name: Install and configure watchdog
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Install softdog
+      tags: ["softdog"]
+      notify:
+        - Restart heartbeat service
+      block:
+        - name: Watchdog | Activate TCO kernel modules
+          community.general.modprobe:
+            name: "{{ item }}"
+            state: present
+            params: "soft_margin=30 soft_reboot_cmd='shutdown -P'"
+            persistent: present
+          with_items:
+            - softdog
+        - name: Configure /etc/systemd/system/heartbeat.service
+          ansible.builtin.copy:
+            src: etc/systemd/system/heartbeat.service
+            dest: /etc/systemd/system/heartbeat.service
+        - name: Copy /opt/heartbeat.sh
+          ansible.builtin.copy:
+            src: opt/heartbeat.sh
+            dest: /opt/heartbeat.sh
+            owner: root
+            group: root
+            mode: "0755"
+        - name: Enable service
+          ansible.builtin.systemd:
+            name: heartbeat.service
+            daemon_reload: true
+            state: started
+            enabled: true
+        - name: Configure /root/loop.sh
+          ansible.builtin.copy:
+            content: |
+              #!/usr/bin/env bash
+              systemctl stop heartbeat
+              while true; do sleep 1; date; done
+
+            dest: /root/loop.sh
+            mode: 0755
+
+  handlers:
+    - name: Restart watchdog
+      ansible.builtin.systemd:
+        name: watchdog.service
+        state: restarted
+      register: result
+      until: "result is not failed"
+      retries: 10
+      delay: 2
+    - name: Restart test service
+      ansible.builtin.systemd:
+        name: test
+        daemon_reload: true
+        state: restarted
+    - name: Restart heartbeat service
+      ansible.builtin.systemd:
+        name: heartbeat
+        daemon_reload: true
+        state: restarted

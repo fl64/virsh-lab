@@ -4,103 +4,151 @@ version: "3"
 
 vars:
   TMP_DIR: ./tmp
-  TEST_DIR: ./test
-  VM_NAME: vlab
-  #IMAGE_URL: "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
-  IMAGE_URL: "https://share.lv426.space/alpine-3-18.qcow2"
-  IMAGE_PATH: "{{ .TMP_DIR }}/cloud.img"
-  IMAGE_BACKUP_PATH: "{{ .TMP_DIR }}/cloud-backup.img"
-  CLOUD_INIT_SRC_DIR: ./cloud-init
-  CLOUD_INIT_PATH: "{{ .TMP_DIR }}/cidata.iso"
+  SSH_DIR: ./ssh
+  IMG_URL: https://share.lv426.space/jammy-server-cloudimg-amd64.img
+  IMG_NAME: vm.img
+  IMG_PATH: "{{.TMP_DIR}}/{{.IMG_NAME}}"
+  CLOUDINIT_ISO_NAME: cidata.iso
+  CLOUDINIT_ISO_PATH: "{{.TMP_DIR}}/{{.CLOUDINIT_ISO_NAME}}"
+  CLOUDINIT_PATH: "./cloudinit"
+  VM_NAME: vm1
+  VM_DISK_PATH: "{{.TMP_DIR}}/{{.VM_NAME}}.img"
 
 tasks:
   tmp:
     cmds:
-      - mkdir -p "{{ .TMP_DIR }}"
+      - mkdir -p {{.TMP_DIR}}
+      - mkdir -p {{.SSH_DIR}}
+    status:
+      - test -d "{{.TMP_DIR}}"
+      - test -d "{{.SSH_DIR}}"
 
   ssh-gen:
+    deps:
+    - tmp
     cmds:
       - for: [meta, user, vendor]
-        cmd: yes | ssh-keygen -t rsa -b 1024 -f {{ .TEST_DIR }}/ssh/{{ .ITEM }}-data -N "" -C "{{ .ITEM }}-data" -v
+        cmd: yes | ssh-keygen -t rsa -b 1024 -f {{ .SSH_DIR }}/{{ .ITEM }}-data -N "" -C "{{ .ITEM }}-data" -v
     status:
-      - test -f "{{ .TEST_DIR }}/ssh/meta-data"
-      - test -f "{{ .TEST_DIR }}/ssh/user-data"
-      - test -f "{{ .TEST_DIR }}/ssh/vendor-data"
+      - test -f "{{ .SSH_DIR }}/meta-data"
+      - test -f "{{ .SSH_DIR }}/user-data"
+      - test -f "{{ .SSH_DIR }}/vendor-data"
 
-  get-image:
+  ssh:
+    vars:
+      VM_IP_ADDR:
+        sh: |
+          virsh domifaddr {{.VM_NAME}} | grep ipv4 | awk '/ipv4/ {split($4, ip, "/"); print ip[1]}'
+    cmds:
+      - ssh cloud@{{.VM_IP_ADDR}} -i {{.SSH_DIR}}/user-data
+
+  image-info:
+    cmds:
+      - qemu-img info {{.IMG_PATH}}
+
+  image-get-base:
     deps:
       - tmp
     cmds:
-      - curl {{ .IMAGE_URL }} -o {{ .IMAGE_PATH }}
-      - task: backup
+      - curl https://share.lv426.space/jammy-server-cloudimg-amd64.img -o {{.IMG_PATH}}
+      - task: image-info
     status:
-      - test -f "{{ .IMAGE_PATH }}"
+      - test -f "{{.IMG_PATH}}"
 
-  backup:
-    deps:
-      - tmp
+  image-backup:
     cmds:
-      - cp {{ .IMAGE_PATH }} {{ .IMAGE_BACKUP_PATH }}
-  restore:
-    cmds:
-      - cp {{ .IMAGE_BACKUP_PATH }} {{ .IMAGE_PATH }}
+      - cp -vf {{.IMG_PATH}} {{.IMG_PATH}}.backup
 
-  cloudinit:
-    deps:
-      - tmp
+  image-restore:
     cmds:
-      - rm -rf {{ .CLOUD_INIT_PATH }}
-      - |
-        genisoimage -output {{ .CLOUD_INIT_PATH }} -fU -V cidata -r -J \
-          {{ .CLOUD_INIT_SRC_DIR }}/user-data \
-          {{ .CLOUD_INIT_SRC_DIR }}/meta-data \
-          {{ .CLOUD_INIT_SRC_DIR }}/vendor-data
+      - cp -vf {{.IMG_PATH}}.backup {{.IMG_PATH}}
+
+  cloud-init:
+    cmds:
+      - rm -rf {{.CLOUDINIT_ISO_PATH}}
+      - genisoimage -output {{.CLOUDINIT_ISO_PATH}} -fU -V cidata -r -J {{.CLOUDINIT_PATH}}/user-data {{.CLOUDINIT_PATH}}/meta-data {{.CLOUDINIT_PATH}}/vendor-data
     sources:
-      - "{{ .CLOUD_INIT_SRC_DIR }}/*"
+      - "{{ .CLOUDINIT_PATH }}/*"
     generates:
-      - "{{ .CLOUD_INIT_PATH }}"
+      - "{{ .CLOUDINIT_ISO_PATH }}"
 
-  run:
+  vm-disk:
+    cmds:
+      - cp -vf {{.IMG_PATH}} {{.VM_DISK_PATH}}
+    status:
+      - test -f "{{.VM_DISK_PATH}}"
+
+  vm-disk-resize:
+    cmds:
+      - qemu-img resize {{.VM_DISK_PATH}} +1G
+      - task: image-info
+
+  vm-run:
     deps:
-      - get-image
-      - cloudinit
+      - cloud-init
     cmds:
       - |
         virt-install \
-        --name {{ .VM_NAME }} \
-        --os-variant ubuntujammy \
+        --name {{.VM_NAME}} \
+        --os-variant ubuntu22.04 \
         --ram 1024 \
-        --vcpus=1,maxvcpus=10 \
-        --disk path={{ .IMAGE_PATH }},format=qcow2,bus=virtio \
-        --disk path={{ .CLOUD_INIT_PATH }},device=cdrom,bus=sata \
+        --vcpus=1 \
+        --disk path={{.VM_DISK_PATH}},format=qcow2,bus=virtio \
+        --disk path={{.CLOUDINIT_ISO_PATH}},device=cdrom,bus=sata \
         --network network=default,model=virtio \
         --import \
         --graphics none \
         --console pty,target_type=virtio \
         --serial pty \
         --virt-type kvm
-  drr:
-    cmds:
-      - task: destroy
-      - task: restore
-      - task: run
 
-  destroy:
+  vm:
     cmds:
-      - virsh destroy --domain {{ .VM_NAME }} || true
-      - virsh undefine --domain {{ .VM_NAME }} || true
+      - task: ssh-gen
+      - task: image-get-base
+      - task: vm-disk
+      - task: vm-run
+      - task: ansible-inventory
+
+  vm-destroy:
+    cmds:
+      - virsh destroy --domain {{.VM_NAME}} || true
+      - virsh undefine --domain {{.VM_NAME}} || true
+      - rm -rf {{.VM_DISK_PATH}}
+
+  vm-ip:
+    vars:
+      VM_IP_ADDR:
+        sh: |
+          virsh domifaddr {{.VM_NAME}} | grep ipv4 | awk '/ipv4/ {split($4, ip, "/"); print ip[1]}'
+    cmds:
+      - echo "{{.VM_IP_ADDR}}"
+
+  ansible-inventory:
+    vars:
+      VM_IP_ADDR:
+        sh: |
+          virsh domifaddr {{.VM_NAME}} | grep ipv4 | awk '/ipv4/ {split($4, ip, "/"); print ip[1]}'
+    cmds:
+      - |
+        cat << EOF > inventory.yaml
+        ---
+        runners:
+          hosts:
+            {{.VM_NAME}}:
+              ansible_port: 22
+              ansible_host: {{.VM_IP_ADDR}}
+              ansible_user: cloud
+        EOF
 
   con:
     cmds:
-      - virsh console {{ .VM_NAME }}
+      - virsh console {{.VM_NAME}}
+
   vnc:
     cmds:
-      - virsh vncdisplay {{ .VM_NAME }}
-  vm-ip:
-    cmds:
-      - virsh domifaddr {{ .VM_NAME }}
+      - virsh vncdisplay {{.VM_NAME}}
 
   clean:
     cmds:
-      - task: destroy
-      - rm -rf {{ .TMP_DIR }}
+      - rm -rf {{.TMP_DIR}}

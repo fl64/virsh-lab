@@ -1,0 +1,22 @@
+#cloud-config
+ssh_pwauth: false
+disable_root: true
+users:
+  - name: cloud
+    # mkpasswd --method=SHA-512 --rounds=4096
+    # cloud
+    passwd: $6$rounds=4096$1P9YhCLUTjpDV9RG$wFFXb3Xs5rj2KS140eiV5r6Xskk20B1knEu5bj83t4WAitUHT1ehLo.g1n5mvBZGEiKAOtrCH1EU.O.w/JoZh0
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    chpasswd: { expire: False }
+    lock_passwd: false
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQC+4XAigLRAUdBUiujzza09LarjS//ElXMgyMiyU0Hzqbl+RlLeIbTaqzQzDhYHtKEf5XjduLACu3bYHjJA7vR/pAMbJIHP5lMo4ktoSWTQWnmZarbLHGcLhu7bhpxi0pnF5MC1vCRui1ZQM7eYzzDQpDbUc5Q/K+NO5LlxF/m/Yw== vendor-data
+
+system_info:
+    default_user:
+      name: cloud
+      home: /cloud
+
+cloud_final_modules:
+- [final_message, once, "💎💎💎 The system is finally up, after $UPTIME seconds 💎💎💎"]

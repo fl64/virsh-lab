@@ -11,3 +11,11 @@ cloud-init schema --system
 cloud-init clean # --reboot
 cat /var/log/cloud-init.log
 cat /var/log/cloud-init.log | grep "Running module"
+
+# GA
+
+```bash
+virsh qemu-agent-command --domain vlab '{"execute":"guest-ping"}'
+virsh qemu-agent-command --domain vlab '{"execute":"guest-get-time"}' --pretty | jq .return | date -d -
+virsh qemu-agent-command --domain vlab '{"execute":"guest-info"}'
+```

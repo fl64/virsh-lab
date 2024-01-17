@@ -1,0 +1,20 @@
+#cloud-config
+packages:
+  - htop
+  - tmux
+  - qemu-guest-agent
+
+users:
+  - name: cloud
+    # mkpasswd --method=SHA-512 --rounds=4096
+    # cloud
+    passwd: $6$rounds=4096$4LDpUy8gH7x7f0S1$3YOF3Gnhw.HTwVyx5MDvFn./CXGttOloL/ETMeACdzcz/q6v0N/TAjs.HROc4GprR49TklglYQHKRH.A/D7XI.
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    chpasswd: { expire: False }
+    lock_passwd: false
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDWQelZl9a2AN6SVXNo1b7Rx2SSyPFzm2lKgnr0HyhEKqxNS2si+oCCmaQald2nyAJn80nfU2YetFX+rkf5FC1I0PhYBRPMC2lIZVXXoXLS8vbZeQwWZRWZ6QWYeL2dm6FJA61Hidfm9xzN7qrPLIUBu9YzkpEfV8vC1s3k+Rl+xQ== user-data
+
+cloud_final_modules:
+- [final_message, once, "🔥 The system is finally up, after $UPTIME seconds 🔥"]

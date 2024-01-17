@@ -1,0 +1,7 @@
+---
+runners:
+  hosts:
+    vm1:
+      ansible_port: 22
+      ansible_host: 
+      ansible_user: cloud
