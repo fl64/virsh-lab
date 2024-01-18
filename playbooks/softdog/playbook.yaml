@@ -13,7 +13,8 @@
           community.general.modprobe:
             name: "{{ item }}"
             state: present
-            params: "soft_margin=30 soft_reboot_cmd='shutdown -P'"
+            #params: "soft_margin=30 soft_noboot=1 soft_reboot_cmd='shutdown -P'"
+            params: "soft_margin=30 soft_panic=1"
             persistent: present
           with_items:
             - softdog

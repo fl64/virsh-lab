@@ -110,7 +110,27 @@ tasks:
       - task: vm-run
       - task: ansible-inventory
 
+  vm-reboot:
+    cmds:
+      - virsh reboot --domain {{.VM_NAME}} || true
+
+  vm-stop:
+    cmds:
+      - virsh stop --domain {{.VM_NAME}} || true
+
+  vm-shutdown:
+    cmds:
+      - virsh shutdown --domain {{.VM_NAME}} || true
+
+  vm-start:
+    cmds:
+      - virsh start --domain {{.VM_NAME}} || true
+
   vm-destroy:
+    cmds:
+      - virsh destroy --domain {{.VM_NAME}} || true
+
+  vm-kill:
     cmds:
       - virsh destroy --domain {{.VM_NAME}} || true
       - virsh undefine --domain {{.VM_NAME}} || true
@@ -139,6 +159,7 @@ tasks:
               ansible_port: 22
               ansible_host: {{.VM_IP_ADDR}}
               ansible_user: cloud
+              ansible_ssh_private_key_file: ./ssh/user-data
         EOF
 
   con:

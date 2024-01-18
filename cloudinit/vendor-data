@@ -11,7 +11,7 @@ users:
     chpasswd: { expire: False }
     lock_passwd: false
     ssh_authorized_keys:
-      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQC+4XAigLRAUdBUiujzza09LarjS//ElXMgyMiyU0Hzqbl+RlLeIbTaqzQzDhYHtKEf5XjduLACu3bYHjJA7vR/pAMbJIHP5lMo4ktoSWTQWnmZarbLHGcLhu7bhpxi0pnF5MC1vCRui1ZQM7eYzzDQpDbUc5Q/K+NO5LlxF/m/Yw== vendor-data
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQC+4XAigLRAUdBUiujzza09LarjS//ElXMgyMiyU0Hzqbl+RlLeIbTaqzQzDhYHtKEf5XjduLACu3bYHjJA7vR/pAMbJIHP5lMo4ktoSWTQWnmZarbLHGcLhu7bhpxi0pnF5MC1vCRui1ZQM7eYzzDQpDbUc5Q/K+NO5LlxF/m/Yw== vendor-data
 
 system_info:
     default_user:
