@@ -61,7 +61,6 @@
               SLEEP_DURATION=5
               states=(0 1) # 1/3
 
-
               while true; do
                 if [ ! -e ${WATCHDOG_DEVICE} ]; then
                   echo "File not found!"
@@ -96,6 +95,7 @@
           ansible.builtin.copy:
             content: |
               #!/usr/bin/env bash
+
               systemctl stop heartbeat
               while true; do sleep 1; date; done
             dest: /root/loop.sh

@@ -6,7 +6,7 @@ vars:
   TMP_DIR: ./tmp
   SSH_DIR: ./ssh
   IMG_URL: https://share.lv426.space/jammy-server-cloudimg-amd64.img
-  IMG_NAME: vm.img
+  IMG_NAME: base.img
   IMG_PATH: "{{.TMP_DIR}}/{{.IMG_NAME}}"
   CLOUDINIT_ISO_NAME: cidata.iso
   CLOUDINIT_ISO_PATH: "{{.TMP_DIR}}/{{.CLOUDINIT_ISO_NAME}}"
@@ -161,7 +161,11 @@ tasks:
               ansible_user: cloud
               ansible_ssh_private_key_file: ./ssh/user-data
         EOF
-
+  ansible-playbook:
+    deps:
+      - ansible-inventory
+    cmds:
+      - ansible-playbook  --diff {{.CLI_ARGS}}
   con:
     cmds:
       - virsh console {{.VM_NAME}}
