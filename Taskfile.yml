@@ -11,7 +11,7 @@ vars:
   CLOUDINIT_ISO_NAME: cidata.iso
   CLOUDINIT_ISO_PATH: "{{.TMP_DIR}}/{{.CLOUDINIT_ISO_NAME}}"
   CLOUDINIT_PATH: "./cloudinit"
-  VM_NAME: vm1
+  VM_NAME: vm
   VM_DISK_PATH: "{{.TMP_DIR}}/{{.VM_NAME}}.img"
 
 tasks:
@@ -108,7 +108,7 @@ tasks:
       - task: image-get-base
       - task: vm-disk
       - task: vm-run
-      - task: ansible-inventory
+      #- task: ansible-inventory
 
   vm-reboot:
     cmds:

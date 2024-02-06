@@ -1,3 +1,5 @@
+# https://github.com/EnterpriseDB/tpa/blob/5c4b53a2ae9b0b3c369326bc87669fac1e5de4e3/roles/watchdog/tasks/main.yml#L8
+
 ---
 - name: Install and configure watchdog
   hosts: all
@@ -6,9 +8,18 @@
   tasks:
     - name: Install softdog
       tags: ["softdog"]
-      notify:
-        - Restart heartbeat service
+
       block:
+        - name: Create UDEV rule
+          tags: [udev]
+          ansible.builtin.copy: # 'KERNEL=="watchdog*", MODE="0666"'
+            content: |
+              KERNEL=="watchdog*", OWNER="cloud", GROUP="root", MODE="660"
+            dest: /etc/udev/rules.d/60-watchdog.rules
+            owner: root
+            group: root
+            mode: 0644
+
         - name: Watchdog | Activate TCO kernel modules
           community.general.modprobe:
             name: "{{ item }}"
@@ -18,47 +29,79 @@
             persistent: present
           with_items:
             - softdog
+
+    - name: Heartbeat service
+      notify:
+        - Restart heartbeat service
+      block:
         - name: Configure /etc/systemd/system/heartbeat.service
           ansible.builtin.copy:
-            src: etc/systemd/system/heartbeat.service
+            content: |
+              [Unit]
+              Description=Heartbeat service
+              After=network.target
+              StartLimitIntervalSec=0
+
+              [Service]
+              User=cloud
+              Type=simple
+              ExecStart=/opt/heartbeat.sh
+              Restart=always
+              RestartSec=1
+
+              [Install]
+              WantedBy=multi-user.target
             dest: /etc/systemd/system/heartbeat.service
+
         - name: Copy /opt/heartbeat.sh
           ansible.builtin.copy:
-            src: opt/heartbeat.sh
+            content: |
+              #!/bin/bash
+              WATCHDOG_DEVICE=/dev/watchdog
+              SLEEP_DURATION=5
+              states=(0 1) # 1/3
+
+
+              while true; do
+                if [ ! -e ${WATCHDOG_DEVICE} ]; then
+                  echo "File not found!"
+                  exit
+                fi
+
+                state=$(printf "%s\n" "${states[@]}" | shuf -n1)
+                #echo "${state}"
+
+                if [[ $state -eq 0 ]]; then
+                  echo "$(date) $(uptime -p) - ok"
+                  echo > ${WATCHDOG_DEVICE};
+                else
+                  echo "$(date) $(uptime -p) - not ok"
+                fi
+                sleep ${SLEEP_DURATION}
+              done
+
             dest: /opt/heartbeat.sh
             owner: root
             group: root
             mode: "0755"
+
         - name: Enable service
           ansible.builtin.systemd:
             name: heartbeat.service
             daemon_reload: true
             state: started
             enabled: true
+
         - name: Configure /root/loop.sh
           ansible.builtin.copy:
             content: |
               #!/usr/bin/env bash
               systemctl stop heartbeat
               while true; do sleep 1; date; done
-
             dest: /root/loop.sh
             mode: 0755
 
   handlers:
-    - name: Restart watchdog
-      ansible.builtin.systemd:
-        name: watchdog.service
-        state: restarted
-      register: result
-      until: "result is not failed"
-      retries: 10
-      delay: 2
-    - name: Restart test service
-      ansible.builtin.systemd:
-        name: test
-        daemon_reload: true
-        state: restarted
     - name: Restart heartbeat service
       ansible.builtin.systemd:
         name: heartbeat
