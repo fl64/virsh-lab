@@ -1,5 +1,5 @@
 # https://github.com/EnterpriseDB/tpa/blob/5c4b53a2ae9b0b3c369326bc87669fac1e5de4e3/roles/watchdog/tasks/main.yml#L8
-
+# systemctl restart systemd-modules-load
 ---
 - name: Install and configure watchdog
   hosts: all
@@ -19,6 +19,24 @@
             owner: root
             group: root
             mode: 0644
+
+        - name: Enable softdog kernel module
+          ansible.builtin.copy:
+            content: |
+              softdog
+            dest: /etc/modules-load.d/softdog.conf
+            owner: root
+            group: root
+            mode: "0644"
+
+        - name: Enable softdog kernel module
+          ansible.builtin.copy:
+            content: |
+              options softdog soft_margin=30 soft_panic=0
+            dest: /etc/modprobe.d/softdog.conf
+            owner: root
+            group: root
+            mode: "0644"
 
         - name: Watchdog | Activate TCO kernel modules
           community.general.modprobe:

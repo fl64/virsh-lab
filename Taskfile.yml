@@ -25,7 +25,7 @@ tasks:
 
   ssh-gen:
     deps:
-    - tmp
+      - tmp
     cmds:
       - for: [meta, user, vendor]
         cmd: yes | ssh-keygen -t rsa -b 1024 -f {{ .SSH_DIR }}/{{ .ITEM }}-data -N "" -C "{{ .ITEM }}-data" -v
@@ -41,6 +41,20 @@ tasks:
           virsh domifaddr {{.VM_NAME}} | grep ipv4 | awk '/ipv4/ {split($4, ip, "/"); print ip[1]}'
     cmds:
       - ssh cloud@{{.VM_IP_ADDR}} -i {{.SSH_DIR}}/user-data
+
+  cloud-init-update-sshkeys:
+    vars:
+      USER_DATA:
+        sh: cat {{ .SSH_DIR }}/user-data.pub
+      VENDOR_DATA:
+        sh: cat {{ .SSH_DIR }}/vendor-data.pub
+      META_DATA:
+        sh: cat {{ .SSH_DIR }}/meta-data.pub
+    cmds:
+    - sed -i 's|ssh-rsa [^ ]* user-data|{{ .USER_DATA }}|g' {{ .CLOUDINIT_PATH }}/*
+    - sed -i 's|ssh-rsa [^ ]* vendor-data|{{ .VENDOR_DATA }}|g' {{ .CLOUDINIT_PATH }}/*
+    - sed -i 's|ssh-rsa [^ ]* meta-data|{{ .META_DATA }}|g' {{ .CLOUDINIT_PATH }}/*
+
 
   image-info:
     cmds:
