@@ -1,22 +1,22 @@
-#cloud-config
-ssh_pwauth: false
-disable_root: true
-users:
-  - name: cloud
-    # mkpasswd --method=SHA-512 --rounds=4096
-    # cloud
-    passwd: $6$rounds=4096$1P9YhCLUTjpDV9RG$wFFXb3Xs5rj2KS140eiV5r6Xskk20B1knEu5bj83t4WAitUHT1ehLo.g1n5mvBZGEiKAOtrCH1EU.O.w/JoZh0
-    shell: /bin/bash
-    sudo: ALL=(ALL) NOPASSWD:ALL
-    chpasswd: { expire: False }
-    lock_passwd: false
-    ssh_authorized_keys:
-      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQC7GBKIEgl2jjGtIAAK1swZi3RfuVJ36qfIWtugpY0VWuGSt/CFOraA3L0FqhABVpkd3xXdYTRxqtqZu8FWTk1/OkCsp4s8B8u/xUr/z7suJFH1zJmMHUA4Rcq7HYgcKDCuEbMpLn1P4D6c8jzBlE8wXwTbQcSSSu8uxURHrVNnUw== vendor-data
+# #cloud-config
+# ssh_pwauth: false
+# disable_root: true
+# users:
+#   - name: cloud
+#     # mkpasswd --method=SHA-512 --rounds=4096
+#     # cloud
+#     passwd: $6$rounds=4096$1P9YhCLUTjpDV9RG$wFFXb3Xs5rj2KS140eiV5r6Xskk20B1knEu5bj83t4WAitUHT1ehLo.g1n5mvBZGEiKAOtrCH1EU.O.w/JoZh0
+#     shell: /bin/bash
+#     sudo: ALL=(ALL) NOPASSWD:ALL
+#     chpasswd: { expire: False }
+#     lock_passwd: false
+#     ssh_authorized_keys:
+#       - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQC7GBKIEgl2jjGtIAAK1swZi3RfuVJ36qfIWtugpY0VWuGSt/CFOraA3L0FqhABVpkd3xXdYTRxqtqZu8FWTk1/OkCsp4s8B8u/xUr/z7suJFH1zJmMHUA4Rcq7HYgcKDCuEbMpLn1P4D6c8jzBlE8wXwTbQcSSSu8uxURHrVNnUw== vendor-data
 
-system_info:
-    default_user:
-      name: cloud
-      home: /cloud
+# system_info:
+#     default_user:
+#       name: cloud
+#       home: /cloud
 
-cloud_final_modules:
-- [final_message, once, "💎💎💎 The system is finally up, after $UPTIME seconds 💎💎💎"]
+# cloud_final_modules:
+# - [final_message, once, "💎💎💎 The system is finally up, after $UPTIME seconds 💎💎💎"]

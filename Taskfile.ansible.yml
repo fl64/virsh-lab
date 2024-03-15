@@ -1,0 +1,30 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  inventory:
+    vars:
+      VM_IP_ADDR:
+        sh: |
+          virsh domifaddr {{.VM_NAME}} | grep ipv4 | awk '/ipv4/ {split($4, ip, "/"); print ip[1]}'
+    cmds:
+      - |
+        cat << EOF > inventory.yaml
+        ---
+        runners:
+          hosts:
+            {{.VM_NAME}}:
+              ansible_port: 22
+              ansible_host: {{.VM_IP_ADDR}}
+              ansible_user: cloud
+              ansible_ssh_private_key_file: ./ssh/user-data
+        EOF
+  playbook:
+    deps:
+      - inventory
+    cmds:
+      - ansible-playbook  --diff {{.CLI_ARGS}}
+  con:
+    cmds:
+      - virsh console {{.VM_NAME}}

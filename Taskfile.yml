@@ -6,6 +6,7 @@ vars:
   TMP_DIR: ./tmp
   SSH_DIR: ./ssh
   IMG_URL: https://share.lv426.space/jammy-server-cloudimg-amd64.img
+  #IMG_URL: #https://mirror.yandex.ru/ubuntu-cloud-images/jammy/current/jammy-server-cloudimg-amd64.img
   IMG_NAME: base.img
   IMG_PATH: "{{.TMP_DIR}}/{{.IMG_NAME}}"
   CLOUDINIT_ISO_NAME: cidata.iso
@@ -13,6 +14,13 @@ vars:
   CLOUDINIT_PATH: "./cloudinit"
   VM_NAME: vm
   VM_DISK_PATH: "{{.TMP_DIR}}/{{.VM_NAME}}.img"
+  VM_DISK_COMPRESSED_PATH: "{{.TMP_DIR}}/{{.VM_NAME}}-compressed.img"
+
+includes:
+  docker:
+    taskfile: Taskfile.docker.yml
+  ansible:
+    taskfile: Taskfile.ansible.yml
 
 tasks:
   tmp:
@@ -40,7 +48,7 @@ tasks:
         sh: |
           virsh domifaddr {{.VM_NAME}} | grep ipv4 | awk '/ipv4/ {split($4, ip, "/"); print ip[1]}'
     cmds:
-      - ssh cloud@{{.VM_IP_ADDR}} -i {{.SSH_DIR}}/user-data
+      - ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null cloud@{{.VM_IP_ADDR}} -i {{.SSH_DIR}}/user-data
 
   cloud-init-update-sshkeys:
     vars:
@@ -64,7 +72,7 @@ tasks:
     deps:
       - tmp
     cmds:
-      - curl https://share.lv426.space/jammy-server-cloudimg-amd64.img -o {{.IMG_PATH}}
+      - curl -L {{.IMG_URL}} -o {{.IMG_PATH}}
       - task: image-info
     status:
       - test -f "{{.IMG_PATH}}"
@@ -92,16 +100,27 @@ tasks:
     status:
       - test -f "{{.VM_DISK_PATH}}"
 
+  vm-disk-info:
+    cmds:
+      - qemu-img info {{.VM_DISK_PATH}}
+
   vm-disk-resize:
     cmds:
-      - qemu-img resize {{.VM_DISK_PATH}} +1G
-      - task: image-info
+      - qemu-img resize {{.VM_DISK_PATH}} +10G
+      - task: vm-disk-info
+
+  vm-disk-compress:
+    cmds:
+      - sudo virt-sparsify --compress {{.VM_DISK_PATH}} {{.VM_DISK_COMPRESSED_PATH}}
+    status:
+      - test -f "{{.VM_DISK_COMPRESSED_PATH}}"
 
   vm-run:
     deps:
       - cloud-init
     cmds:
       - |
+        # #--graphics none \
         virt-install \
         --name {{.VM_NAME}} \
         --os-variant ubuntu22.04 \
@@ -111,7 +130,8 @@ tasks:
         --disk path={{.CLOUDINIT_ISO_PATH}},device=cdrom,bus=sata \
         --network network=default,model=virtio \
         --import \
-        --graphics none \
+        --graphics vnc,listen=0.0.0.0 \
+        --noautoconsole \
         --console pty,target_type=virtio \
         --serial pty \
         --virt-type kvm
@@ -128,21 +148,18 @@ tasks:
     cmds:
       - virsh reboot --domain {{.VM_NAME}} || true
 
+
   vm-stop:
     cmds:
-      - virsh stop --domain {{.VM_NAME}} || true
-
-  vm-shutdown:
-    cmds:
       - virsh shutdown --domain {{.VM_NAME}} || true
+
+  vm-force-stop:
+    cmds:
+      - virsh destroy --domain {{.VM_NAME}} || true
 
   vm-start:
     cmds:
       - virsh start --domain {{.VM_NAME}} || true
-
-  vm-destroy:
-    cmds:
-      - virsh destroy --domain {{.VM_NAME}} || true
 
   vm-kill:
     cmds:
@@ -158,31 +175,9 @@ tasks:
     cmds:
       - echo "{{.VM_IP_ADDR}}"
 
-  ansible-inventory:
-    vars:
-      VM_IP_ADDR:
-        sh: |
-          virsh domifaddr {{.VM_NAME}} | grep ipv4 | awk '/ipv4/ {split($4, ip, "/"); print ip[1]}'
-    cmds:
-      - |
-        cat << EOF > inventory.yaml
-        ---
-        runners:
-          hosts:
-            {{.VM_NAME}}:
-              ansible_port: 22
-              ansible_host: {{.VM_IP_ADDR}}
-              ansible_user: cloud
-              ansible_ssh_private_key_file: ./ssh/user-data
-        EOF
-  ansible-playbook:
-    deps:
-      - ansible-inventory
-    cmds:
-      - ansible-playbook  --diff {{.CLI_ARGS}}
   con:
-    cmds:
-      - virsh console {{.VM_NAME}}
+   cmds:
+   - virsh console --domain {{.VM_NAME}}
 
   vnc:
     cmds:
@@ -190,4 +185,9 @@ tasks:
 
   clean:
     cmds:
+      - task: vm-kill
+
+  clean-all:
+    cmds:
+      - task: vm-kill
       - rm -rf {{.TMP_DIR}}
