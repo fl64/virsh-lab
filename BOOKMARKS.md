@@ -19,3 +19,9 @@ virsh qemu-agent-command --domain vlab '{"execute":"guest-ping"}'
 virsh qemu-agent-command --domain vlab '{"execute":"guest-get-time"}' --pretty | jq .return | date -d -
 virsh qemu-agent-command --domain vlab '{"execute":"guest-info"}'
 ```
+
+# DE
+
+```bash
+apt install cinnamon-desktop-environment --no-install-recommends
+```

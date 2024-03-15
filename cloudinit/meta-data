@@ -1,4 +1,4 @@
 # # instance-id: lv4261
 # # local-hostname: lv4261
-# public-keys:
-# - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQC1QcdwU6E2WFjMbW2H5ljNYrorOsgLcv/KRSZIfKLgclQ6brQLgxhjWiJXCCeo5PQnn2bTPEfacnUhmW2D60Bljao8i5c/GoOP1WDaghJzQ8uiuDehdwmFZ3g9jWC/Bv1sSmYfjpz4KQXl9r8A6q06rcEceSAWKHE3X4yBkWnIRQ== meta-data
+public-keys:
+- ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQC1QcdwU6E2WFjMbW2H5ljNYrorOsgLcv/KRSZIfKLgclQ6brQLgxhjWiJXCCeo5PQnn2bTPEfacnUhmW2D60Bljao8i5c/GoOP1WDaghJzQ8uiuDehdwmFZ3g9jWC/Bv1sSmYfjpz4KQXl9r8A6q06rcEceSAWKHE3X4yBkWnIRQ== meta-data
