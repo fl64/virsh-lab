@@ -24,4 +24,8 @@ virsh qemu-agent-command --domain vlab '{"execute":"guest-info"}'
 
 ```bash
 apt install cinnamon-desktop-environment --no-install-recommends
+
+sudo apt install xfce4 xfce4-goodies
+sudo apt-get -y install prboom-plus
+
 ```

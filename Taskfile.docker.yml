@@ -4,8 +4,8 @@ version: "3"
 
 vars:
   DOCKER_REPO: docker.io/fl64
-  DOCKER_IMAGE_NAME: ubuntu-2204
-  DOCKER_IMAGE_TAG: xfce
+  DOCKER_IMAGE_NAME: doom #ubuntu-2204
+  DOCKER_IMAGE_TAG: latest # xfce
   DOCKER_IMAGE: "{{.DOCKER_REPO}}/{{.DOCKER_IMAGE_NAME}}:{{.DOCKER_IMAGE_TAG}}"
 
 tasks:
